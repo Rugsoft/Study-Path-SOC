@@ -15,6 +15,29 @@ npm run serve   # http://127.0.0.1:4173
 `npm run dev` hace build + serve. Con `npm run watch` el build se repite cada
 vez que guardas una nota en Obsidian.
 
+## Publicar en GitHub Pages
+
+El build **no puede correr en GitHub Actions**: lee el vault de una ruta local
+(`vault.config.json`) que los runners de GitHub no alcanzan. Por eso el
+despliegue se genera en local y se vuelca en la rama `gh-pages`, que contiene la
+salida de `build.mjs` y no el código fuente.
+
+```bash
+./scripts/deploy-pages.sh          # construye y actualiza gh-pages en local
+./scripts/deploy-pages.sh --push   # ademas sube la rama al remoto
+```
+
+Después, en **Settings → Pages**, elige *Deploy from a branch* y selecciona
+`gh-pages` con la carpeta `/ (root)`.
+
+Consideraciones:
+
+- La rama `gh-pages` contiene el sitio ya generado (7,8 MB, ~400 ficheros).
+- `site/.nojekyll` evita que Jekyll reescriba el CSS y el JS.
+- `data/search.json` pesa 1,8 MB y cada visitante lo descarga al primer uso.
+- El progreso de estudio vive en `localStorage`, así que **cada dispositivo y
+  cada navegador lleva el suyo**: no se sincroniza entre dispositivos.
+
 ## Qué genera el build
 
 | Artefacto | Contenido |
