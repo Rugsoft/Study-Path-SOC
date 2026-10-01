@@ -674,6 +674,32 @@ select.dropdown {
   border-top: 1px solid var(--hairline);
 }
 
+/* Enlaces entrantes: quien apunta a esta nota. Se apoya en las mismas
+   tarjetas del resto del sitio, asi que no introduce geometria nueva. */
+.backlinks {
+  margin-top: var(--sp-2xl);
+  padding-top: var(--sp-xl);
+  border-top: 1px solid var(--hairline-strong);
+}
+.backlinks__label { color: var(--body-mute); margin-bottom: var(--sp-lg); }
+
+.backlinks__grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: var(--sp-sm);
+}
+
+.backlinkitem { padding: var(--sp-base) var(--sp-lg); }
+.backlinkitem .noteitem__title { font-size: 16px; line-height: 24px; }
+
+.backlinks__empty {
+  margin: 0;
+  color: var(--body-grey);
+  font-size: 16px;
+  line-height: 24px;
+  max-width: 62ch;
+}
+
 /* ------------------------------------------- contenido de la nota */
 
 .note__h { margin-top: var(--sp-2xl); margin-bottom: var(--sp-base); scroll-margin-top: var(--sp-lg); }
@@ -868,6 +894,17 @@ select.dropdown {
   font-size: 16px;
   line-height: 24px;
   color: var(--body-mute);
+}
+
+/* Aviso de que la lista esta acotada por peso, no por falta de resultados. */
+.searchmore {
+  margin-top: var(--sp-lg);
+  padding: var(--sp-base) var(--sp-lg);
+  border: 1px dashed var(--hairline);
+  border-radius: var(--r-md);
+  color: var(--body-mute);
+  font-size: 16px;
+  line-height: 24px;
 }
 
 /* ------------------------------------------------------------ cursos */

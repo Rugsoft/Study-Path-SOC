@@ -70,6 +70,8 @@ boot(async (index) => {
 
         <div class="note__body" id="body">${note.html}</div>
 
+        ${backlinksBlock(note)}
+
         <nav class="notenav">
           ${prev ? `<a class="btn btn--cta" href="nota.html?id=${encodeURIComponent(prev.id)}">← ${escapeHtml(clip(prev.title))}</a>` : '<span></span>'}
           ${next ? `<a class="btn btn--cta" href="nota.html?id=${encodeURIComponent(next.id)}">${escapeHtml(clip(next.title))} →</a>` : '<span></span>'}
@@ -109,6 +111,47 @@ boot(async (index) => {
   initScrollSpy(note.headings);
   document.title = `${note.title} — StudyPath`;
 });
+
+/**
+ * Bloque de enlaces entrantes: que otras notas apuntan a esta.
+ *
+ * Se pinta siempre, incluso vacio, para que el usuario sepa que el apartado
+ * existe. El titulo y el tema de quien enlaza llegan en note.backlinks, que el
+ * build calcula invirtiendo los enlaces que ya renderiza.
+ */
+function backlinksBlock(note) {
+  const list = note.backlinks ?? [];
+  const title = list.length === 1 ? '1 nota enlaza esta' : `${list.length} notas enlazan esta`;
+
+  return `
+    <section class="backlinks">
+      <div class="label backlinks__label">${title}</div>
+      ${
+        list.length
+          ? `<div class="backlinks__grid">
+               ${list
+                 .map(
+                   (b) => `
+                 <a class="noteitem backlinkitem" href="nota.html?id=${encodeURIComponent(b.id)}">
+                   <div class="noteitem__body">
+                     <span class="noteitem__title">${escapeHtml(clip(b.title, 64))}</span>
+                     <span class="noteitem__meta">
+                       <span>${escapeHtml(b.topicLabel)}</span>
+                       ${b.session ? `<span>sesión ${b.session}</span>` : ''}
+                     </span>
+                   </div>
+                 </a>`,
+                 )
+                 .join('')}
+             </div>`
+          : `<p class="backlinks__empty">
+               Ninguna otra nota enlaza a esta todavía. Cuando escribas aquí una
+               referencia a otra ficha, esta nota aparecerá en su bloque de
+               enlaces entrantes.
+             </p>`
+      }
+    </section>`;
+}
 
 /** Resalta en el indice el apartado que se esta leyendo. */
 function initScrollSpy(headings) {

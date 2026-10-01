@@ -1,6 +1,6 @@
 /* Pagina de temas: filtros por area y listado, o resultados de busqueda. */
 
-import { boot, progress, search, escapeHtml } from './core.js';
+import { boot, progress, search, countMatches, escapeHtml } from './core.js';
 import { noteItem } from './components.js';
 
 boot(async (index) => {
@@ -119,8 +119,14 @@ boot(async (index) => {
     listEl.classList.add('notelist--single');
     headEl.textContent = `Resultados para "${text}"`;
 
-    const results = await search(text, 60);
+    // El limite marca tambien el peso: cada resultado descarga su nota para
+  // pintar el fragmento (unos 11 KB de media). Con 60 eran 650 KB, asi que
+  // se acota a 20 y se avisa cuando hay mas.
+  const results = await search(text, 20);
     countEl.textContent = `${results.length} resultado${results.length === 1 ? '' : 's'}`;
+
+    // Si hay mas de los que caben, se indica en vez de cortar en silencio.
+    const total = await countMatches(text);
 
     listEl.innerHTML = results.length
       ? results
@@ -131,11 +137,18 @@ boot(async (index) => {
           <span class="searchresult__crumb">${escapeHtml(r.doc.topicLabel)}${
             r.doc.course?.session ? ` · sesion ${r.doc.course.session}` : ''
           }</span>
-          <span class="searchresult__snippet">${r.snippet}</span>
+          ${r.snippet ? `<span class="searchresult__snippet">${r.snippet}</span>` : ''}
         </a>`,
           )
           .join('')
       : '<div class="empty">Sin resultados. Prueba con menos letras.</div>';
+    if (total > results.length) {
+      listEl.insertAdjacentHTML(
+        'beforeend',
+        `<div class="searchmore">Mostrando los ${results.length} primeros de ${total}.
+         Afina la busqueda para ver el resto.</div>`,
+      );
+    }
   }
 
   if (query) {
