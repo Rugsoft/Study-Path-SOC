@@ -85,6 +85,9 @@ function currentPage() {
   return file === '' ? 'index.html' : file;
 }
 
+/** Indice activo, para poder repintar el progreso desde el evento. */
+let chromeIndex = null;
+
 /** Subnav con el progreso global; se repinta cada vez que cambia. */
 function paintProgress(index) {
   const fill = document.querySelector('.progress__fill');
@@ -106,15 +109,16 @@ function paintProgress(index) {
 export async function renderChrome(index) {
   const page = currentPage();
   chromeIndex = index;
+  const sessionCount = index.notes.filter((n) => n.course).length;
 
   const topbar = document.getElementById('topbar');
   if (topbar) {
     topbar.className = 'topbar';
     topbar.innerHTML = `
-      <div class="column topbar__inner">
+      <div class="topbar__inner column">
         <a class="brand" href="index.html">
           <span class="brand__mark">StudyPath</span>
-          <span class="brand__sub">tu vault, para estudiar</span>
+          <span class="brand__sub">notas de clase</span>
         </a>
         <nav class="topnav">
           ${NAV.map(
@@ -123,10 +127,8 @@ export async function renderChrome(index) {
           ).join('')}
         </nav>
         <div class="topbar__search">
-          <div class="searchbar">
-            <input id="q" type="search" placeholder="Buscar en ${index.stats.notes} notas…"
-                   autocomplete="off" aria-label="Buscar notas">
-          </div>
+          <input id="q" type="search" placeholder="Buscar en ${index.stats.notes} notas…"
+                 autocomplete="off" aria-label="Buscar notas">
           <div id="qresults" class="searchresults" hidden></div>
         </div>
       </div>`;
@@ -138,11 +140,13 @@ export async function renderChrome(index) {
     subnav.innerHTML = `
       <div class="column" style="display:flex;align-items:center;gap:var(--sp-base);width:100%">
         <span>${index.stats.notes} notas · ${index.stats.topics} temas · ${index.stats.tags} etiquetas</span>
+        <span class="subnav__sep">·</span>
+        <span>${sessionCount} de sesión en Cursos</span>
         <div class="subnav__right">
-          <div class="progress">
-            <div class="progress__track"><div class="progress__fill" style="width:0%"></div></div>
+          <span class="progress">
+            <span class="progress__track"><span class="progress__fill" style="width:0%"></span></span>
             <span class="progress__value">0%</span>
-          </div>
+          </span>
           <span class="dot">·</span>
           <span id="studiedcount">0 estudiadas</span>
         </div>
@@ -152,22 +156,26 @@ export async function renderChrome(index) {
   const footer = document.getElementById('footer');
   if (footer) {
     footer.className = 'footer';
+    // Se ordenan por material real, no por el count global (que incluye sesiones).
+    const counts = new Map(
+      index.notes.reduce((m, n) => m.set(n.topic, (m.get(n.topic) ?? 0) + (n.course ? 0 : 1)), new Map()),
+    );
     const top = index.topics
-      .slice()
-      .sort((a, b) => b.count - a.count)
+      .filter((t) => counts.get(t.id))
+      .sort((a, b) => counts.get(b.id) - counts.get(a.id))
       .slice(0, 5);
     footer.innerHTML = `
       <div class="column footer__cols">
         <div>
           <div class="footer__title">StudyPath</div>
-          <p>Web de estudio generada desde el vault de Obsidian.</p>
+          <p>Notas de clase y material de estudio, ordenados por tema.</p>
         </div>
         <div>
           <div class="footer__title">Temas</div>
           ${top.map((t) => `<div><a href="temas.html?t=${t.id}">${t.label}</a></div>`).join('')}
         </div>
         <div>
-          <div class="footer__title">Vault</div>
+          <div class="footer__title">Contenido</div>
           <div>${index.stats.words.toLocaleString('es-ES')} palabras</div>
           <div>${index.stats.codeBlocks} bloques de código</div>
           <div>Actualizado ${new Date(index.generatedAt).toLocaleDateString('es-ES')}</div>
@@ -182,9 +190,6 @@ export async function renderChrome(index) {
   // El progreso se repinta solo: marcar una nota actualiza la barra sin recargar.
   window.addEventListener('progress:change', () => paintProgress(chromeIndex));
 }
-
-/** Indice activo, para poder repintar el progreso desde el evento. */
-let chromeIndex = null;
 
 /* -------------------------------------------------------------- buscador */
 
@@ -445,9 +450,18 @@ export function initCopyButtons(root = document) {
   });
 }
 
-/** Vecinos dentro del mismo tema, para navegar al final de la nota. */
+/**
+ * Vecinos dentro del mismo eje, para navegar al final de la nota.
+ *
+ * El pool se limita al mismo tema Y al mismo eje: una ficha no debe saltar a
+ * una bitacora de sesion solo porque compartan topic, porque las sesiones solo
+ * tienen sentido dentro del curso.
+ */
 export function neighbours(index, note) {
-  const pool = index.notes.filter((n) => n.topic === note.topic).sort((a, b) => a.title.localeCompare(b.title, 'es'));
+  const sameAxis = (n) => Boolean(n.course) === Boolean(note.course);
+  const pool = index.notes
+    .filter((n) => n.topic === note.topic && sameAxis(n))
+    .sort((a, b) => a.title.localeCompare(b.title, 'es'));
   const i = pool.findIndex((n) => n.id === note.id);
   return {
     prev: i > 0 ? pool[i - 1] : null,

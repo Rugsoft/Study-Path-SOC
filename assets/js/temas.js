@@ -11,7 +11,7 @@ boot(async (index) => {
   let activeTag = params.get('g') ?? '';
 
   const tagsFor = (topicId) => {
-    const pool = index.notes.filter((n) => (topicId === 'all' ? true : n.topic === topicId));
+    const pool = materialFor(topicId);
     return [...new Set(pool.flatMap((n) => n.tags))].sort((a, b) => a.localeCompare(b, 'es'));
   };
 
@@ -21,23 +21,38 @@ boot(async (index) => {
   const tagsEl = document.getElementById('tagfilters');
   const countEl = document.getElementById('count');
 
+  /**
+   * El eje por temas es solo de material. Las bitacoras de sesion se listan en
+   * Cursos, donde tienen sentido cronologico: mezcladas aqui solo confuse.
+   * El buscador (mas abajo) si las devuelve, marcadas con su numero de sesion.
+   */
+  const isSession = (n) => Boolean(n.course);
+  const materialFor = (topicId) =>
+    index.notes.filter((n) => !isSession(n) && (topicId === 'all' ? true : n.topic === topicId));
+
   /** Todas las notas que pasan los filtros activos. */
   function filtered() {
-    return index.notes.filter((n) => {
-      if (activeTopic !== 'all' && n.topic !== activeTopic) return false;
+    return materialFor(activeTopic).filter((n) => {
       if (activeTag && !n.tags.includes(activeTag)) return false;
       return true;
     });
   }
 
   function paintPills() {
-    const total = index.notes.length;
+    // Los recuentos son los de material, que es lo que hay debajo: pulsar una
+    // pastilla y ver otro numero seria el fallo clasico de este filtro.
+    const counts = new Map(
+      index.topics.map((t) => [t.id, materialFor(t.id).length]),
+    );
+    const total = materialFor('all').length;
     pillsEl.innerHTML = [
       `<button class="chip ${activeTopic === 'all' ? 'chip--active' : ''}" data-topic="all">Todas · ${total}</button>`,
-      ...index.topics.map(
-        (t) =>
-          `<button class="chip ${activeTopic === t.id ? 'chip--active' : ''}" data-topic="${t.id}">${escapeHtml(t.label)} · ${t.count}</button>`,
-      ),
+      ...index.topics
+        .filter((t) => counts.get(t.id) > 0)
+        .map(
+          (t) =>
+            `<button class="chip ${activeTopic === t.id ? 'chip--active' : ''}" data-topic="${t.id}">${escapeHtml(t.label)} · ${counts.get(t.id)}</button>`,
+        ),
     ].join('');
 
     pillsEl.querySelectorAll('[data-topic]').forEach((btn) => {
