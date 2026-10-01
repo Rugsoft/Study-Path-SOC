@@ -3,7 +3,7 @@
   "version": "0.1.0",
   "private": true,
   "type": "module",
-  "description": "Web de estudio sobre el vault de Obsidian, con el design system de Steam.",
+  "description": "Web de estudio de notas de clase, con el design system de Elicit.",
   "scripts": {
     "build": "node build.mjs",
     "dev": "node build.mjs && node server.mjs",

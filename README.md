@@ -1,23 +1,23 @@
 # StudyPath
 
-Web de estudio generada desde un vault de Obsidian, con el design system de
-[steam.design.md](steam.design.md): escalera navy de cuatro pasos, gramática de
-doble voltaje en los gradientes, radios de 2px y columna fija de 940px.
+Web de estudio con el design system de
+[elicit.design.md](elicit.design.md): binario de pergamino y teal, un único
+acento chartreuse y tres registros tipográficos sin solaparse.
 
 ## Puesta en marcha
 
 ```bash
 npm install     # marked + highlight.js (solo dependencias de build)
-npm run build   # recorre el vault y genera site/
+npm run build   # recorre el origen de las notas y genera site/
 npm run serve   # http://127.0.0.1:4173
 ```
 
 `npm run dev` hace build + serve. Con `npm run watch` el build se repite cada
-vez que guardas una nota en Obsidian.
+vez que guardas una nota.
 
 ## Publicar en GitHub Pages
 
-El build **no puede correr en GitHub Actions**: lee el vault de una ruta local
+El build **no puede correr en GitHub Actions**: lee las notas de una ruta local
 (`vault.config.json`) que los runners de GitHub no alcanzan. Por eso el
 despliegue se genera en local y se vuelca en la rama `gh-pages`, que contiene la
 salida de `build.mjs` y no el código fuente.
@@ -32,7 +32,7 @@ Después, en **Settings → Pages**, elige *Deploy from a branch* y selecciona
 
 Consideraciones:
 
-- La rama `gh-pages` contiene el sitio ya generado (7,8 MB, ~400 ficheros).
+- La rama `gh-pages` contiene el sitio ya generado (~400 ficheros).
 - `site/.nojekyll` evita que Jekyll reescriba el CSS y el JS.
 - `data/search.json` pesa 1,8 MB y cada visitante lo descarga al primer uso.
 - El progreso de estudio vive en `localStorage`, así que **cada dispositivo y
@@ -42,61 +42,91 @@ Consideraciones:
 
 | Artefacto | Contenido |
 |---|---|
-| `site/data/index.json` | Metadatos de las 390 notas: título, tema, tags, curso, tiempo de lectura |
+| `site/data/index.json` | Metadatos de las notas: título, tema, tags, curso, tiempo de lectura |
 | `site/data/notes/*.json` | HTML ya renderizado por nota, con resaltado de sintaxis |
 | `site/data/search.json` | Índice invertido del buscador; se descarga en el primer uso, no al arrancar |
-| `site/assets/img/` | Imágenes copiadas del vault |
+| `site/assets/img/` | Imágenes copiadas del origen |
+
+`index.json` **no publica la ruta local del origen**: se descarga en cada
+visita y la ruta del disco no es información de la web.
 
 ## Estructura
 
 ```
-build.mjs             orquestador: recorre el vault, renderiza, indexa e informa
+build.mjs             orquestador: recorre, renderiza, indexa e informa
 server.mjs            servidor estático sin dependencias, solo loopback
-vault.config.json     ruta del vault y reglas de include/ignore
+vault.config.json     ruta de origen, exclusiones y reglas de include/ignore
 tools/
   slug.mjs            normalización de nombres y resolución de colisiones
   taxonomy.mjs        clasificación por tema y por curso/módulo/sesión
-  parse.mjs           markdown + sintaxis Obsidian -> HTML con resaltado
+  parse.mjs           markdown + sintaxis extendida -> HTML con resaltado
   search-index.mjs    índice invertido con claves ordenadas para prefijos
 src/                  fuentes estáticas que el build copia a site/
 ```
 
 ## Decisiones del design system
 
-El archivo de diseño define una gramática de doble voltaje, y el sitio la respeta:
+El archivo de diseño define un sistema binario y el sitio lo respeta:
 
-- El gradiente lima (`#a4d007` -> `#5c7e10`) aparece **solo** en "marcar como
-  estudiada". Es la única acción de compromiso de la aplicación, igual que
-  "Install" y "Play" lo son en Steam. Reutilizarlo en algo navegable destruiría
-  la señal commit-vs-navigate.
-- Toda la navegación (buscar, filtros de tema, siguiente nota) usa el gradiente
-  cian `#06bfff -> #2881a7 -> #2d73ff`.
-- Las tarjetas no llevan `box-shadow`: la elevación es un escalón de superficie
-  sobre la escalera navy `canvas -> rail -> tile -> inset`.
-- Radio de 2px en toda superficie interactiva. Sin geometría de pastilla.
-- El cuerpo se queda en **Arial**, no Inter: el documento advierte que Inter
-  rompe el ritmo denso de la capa de 11px. Inter queda para el chrome,
-  sustituyendo a la propietaria Motiva Sans.
-- `letter-spacing: 1.104px` en los encabezados de 16px/700, que es el tracking
-  que da el ritmo al chrome de Steam.
-- Columna de contenido fija de 940px, como en el Steam original.
+- **El lienzo es binario**: o pergamino `#fcfcf8` con tinta teal `#083d44`, o
+  banda teal a sangre. No hay gris medio ni charcoal intermedio. El teal hace
+  de texto, de fondo de banda y de pelo a la vez.
+- El **chartreuse `#e5ff97`** es el relleno del botón primario y nada más: solo
+  lo lleva "marcar como estudiada". El documento prohíbe usarlo como fondo
+  decorativo, porque perdería la escasez que lo hace funcionar como highlight.
+- Los **botones primarios van cuadrados** (radio 0). El documento lo llama su
+  señal de forma más distintiva: no es un olvido de redondeo.
+- **Sin `box-shadow`**: la separación la hacen el pelo de 1px y el cambio de
+  superficie (canvas → sage → cool).
+- **El azul de enlace se queda en `#0000ee`**, el del navegador, sin
+  sobreescribir. En un documento académico el color de enlace es una convención
+  de navegación, no una oportunidad de marca.
+- **Tres tipografías, tres registros**: EB Garamond en titulares (sustituto de
+  Martina Plantijn, que no es libre), Barlow Condensed en el cuerpo
+  (sustituto de Special Gothic Variable) y DM Mono en mayúsculas para etiquetas
+  y marcas de tiempo.
+- El **hero de la portada es un buscador**, no un titular con botón: el campo
+  de búsqueda es el elemento de conversión del sistema.
+- Columna de contenido fija de 940px.
 
 ## Contenido
 
-- 390 notas, 139.863 palabras, 1.006 bloques de código.
-- 9 temas: JavaScript (75), PHP (116), CSS (50), HTML (33), Bases de datos (34),
-  DevOps & Implantación web (57), UI/UX (15), Recursos & Roadmaps (9), Proyectos (1).
+- 388 notas, 139.025 palabras, 1.002 bloques de código.
+- 8 temas: PHP (102 fichas), JavaScript (60), CSS (50), DevOps & Implantación
+  web (37), Bases de datos (19), HTML (24), UI/UX (11), Recursos & Roadmaps (8).
 - 1 curso (DATW_SOC) con 77 notas de sesión en 3 módulos.
-- 251 etiquetas distintas.
-- Eje principal por tema; las notas de sesión cuelgan de "Cursos" y además
-  aparecen dentro del tema que tocan, según su código de unidad UF.
+- 249 etiquetas distintas.
 
-## Traducción de la sintaxis de Obsidian
+## Los dos ejes, separados
 
-El vault usa frontmatter YAML, líneas `Etiquetas:`, callouts `> [!tipo]`,
-tablas, enlaces internos y embeds. El build los convierte:
+El contenido se lee por **tema** o por **curso**, y las páginas no los mezclan:
 
-| En el vault | En la web |
+- **Temas** (311 notas) son las fichas de temario: lo que uno estudia por
+  tecnología. Es el eje principal y el que aparece en la portada.
+- **Cursos** (77 notas) son las bitácoras de clase, en orden de sesión. Solo
+  tienen sentido cronológicamente.
+
+Por eso una nota de sesión **no** aparece en el listado de su tema ni en el
+recuento de las pastillas: comparte `topic` con el temario por su código de
+unidad, pero mezclarlas allí solo confunde. El buscador sí las encuentra, y las
+marca con su número de sesión.
+
+La navegación al final de la nota (anterior/siguiente) también respeta el eje:
+una ficha nunca salta a una bitácora, ni al revés.
+
+## Qué queda fuera del sitio
+
+`vault.config.json` tiene una lista `excludePaths` con rutas que no se publican.
+El build las descarta **antes** de registrar la nota, así que no aparecen ni en
+el índice ni en el buscador. Editar esa lista es la única forma de cambiar qué
+se comparte.
+
+## Traducción de la sintaxis del origen
+
+El formato de origen usa frontmatter YAML, líneas `Etiquetas:`, callouts
+`> [!tipo]`, tablas, enlaces internos y embeds. El build los convierte:
+
+| En el origen | En la web |
 |---|---|
 | `Etiquetas: #php #arrays` | Chips de etiqueta enlazables a `temas.html?g=` |
 | `> [!warning] Título` | Bloque `aside` con etiqueta traducida al español |
@@ -108,6 +138,6 @@ tablas, enlaces internos y embeds. El build los convierte:
 ## Fuera de alcance
 
 - Los diagramas Mermaid se muestran como código, sin renderizar.
-- Los 126 PDF del vault no se parsean.
+- Los PDF del origen no se parsean.
 - El progreso de estudio vive en `localStorage`: no hay backend ni cuentas.
-- Steam es dark-only por diseño, así que no hay modo claro.
+- El sistema es claro por diseño, así que no hay modo oscuro.

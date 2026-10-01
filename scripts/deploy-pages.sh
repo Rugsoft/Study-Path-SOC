@@ -5,8 +5,8 @@
 #   ./scripts/deploy-pages.sh          construye y commitea en gh-pages
 #   ./scripts/deploy-pages.sh --push   ademas sube la rama al remoto
 #
-# El build se ejecuta aqui, no en GitHub Actions: build.mjs lee el vault de
-# Obsidian de una ruta local que los runners de GitHub no pueden alcanzar.
+# El build se ejecuta aqui, no en GitHub Actions: build.mjs lee las notas de
+# una ruta local que los runners de GitHub no pueden alcanzar.
 
 set -euo pipefail
 

@@ -19,7 +19,7 @@ boot(async (index) => {
           <p>
             ${course.notes} notas de sesion ·
             ${studied} marcadas como estudiadas ·
-            los materiales por tema estan en <a href="temas.html">Temas</a>
+            las fichas por tema estan en <a href="temas.html">Temas</a>
           </p>
         </div>
 
@@ -58,7 +58,7 @@ boot(async (index) => {
 
   main.innerHTML =
     html ||
-    `<div class="empty">El vault no tiene notas bajo <code>30_Estudios</code>.</div>`;
+    `<div class="empty">No hay notas de sesion en el indice.</div>`;
 
   function sessionRow(n) {
     const isDone = doneIds.has(n.id);

@@ -1,7 +1,7 @@
 /**
- * Taxonomia del vault.
+ * Taxonomia del contenido.
  *
- * El vault esta organizado en dos ejes que no se mezclan de forma natural:
+ * El origen esta organizado en dos ejes que no se mezclan de forma natural:
  *  - 20_Tech_Stack: fichas por tecnologia, que es como uno estudia un tema.
  *  - 30_Estudios: bitacoras cronologicas de clase del curso DATW_SOC.
  *

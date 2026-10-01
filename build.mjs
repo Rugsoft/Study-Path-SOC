@@ -32,6 +32,20 @@ const norm = (s) =>
     .toLowerCase()
     .trim();
 
+/**
+ * Rutas del vault que no se publican, en notacion del config (separador "/").
+ * Se comparan normalizadas, asi que da igual como las escribas aqui.
+ */
+const excluded = (config.excludePaths ?? []).map((p) =>
+  String(p).replace(/\\/g, '/').replace(/\/+$/, '').toLowerCase(),
+);
+
+/** Una ruta relativa al vault esta excluida si coincide con un prefijo de la lista. */
+function isExcluded(relPath) {
+  const rel = relPath.replace(/\\/g, '/').toLowerCase();
+  return excluded.some((prefix) => rel === prefix || rel.startsWith(`${prefix}/`));
+}
+
 /* ------------------------------------------------------------------ */
 
 function walk(dir, extensions, ignore, acc = []) {
@@ -119,9 +133,17 @@ function build() {
   const mdFiles = walk(VAULT, config.includeExtensions, config.ignoreDirs);
   const usedSlugs = new Map();
   const notes = [];
+  const skipped = [];
 
   for (const file of mdFiles) {
     const rel = path.relative(VAULT, file);
+    // Las exclusiones se aplican aqui, antes de registrar la nota: si una nota
+    // queda en el indice sin su fichero en notes/, el buscador la encontraria y
+    // el clic daria un 404. Sin nota, no hay enlace roto posible.
+    if (isExcluded(rel)) {
+      skipped.push(rel);
+      continue;
+    }
     const title = path.basename(file, path.extname(file));
     const slug = uniqueSlug(title, rel, usedSlugs);
     const { topicId, course } = classify(rel);
@@ -224,7 +246,8 @@ function build() {
 
   const listBytes = writeJson(path.join(OUT, 'data', 'index.json'), {
     generatedAt: new Date().toISOString(),
-    vault: VAULT,
+    // A proposito NO se publica la ruta local del vault: index.json se
+    // descarga en cada visita y la ruta del disco no es info de la web.
     stats: {
       notes: rendered.length,
       topics: topics.length,
@@ -287,6 +310,10 @@ function build() {
   console.log(`  Tags              ${tags.length}`);
   console.log(`  Palabras          ${totalWords.toLocaleString('es-ES')}`);
   console.log(`  Bloques de codigo ${Math.round(totalCode)}`);
+  if (skipped.length) {
+    console.log(`  Excluidas         ${skipped.length}`);
+    for (const s of skipped) console.log(`    - ${s}`);
+  }
   console.log('  ' + '-'.repeat(46));
   console.log(`  Topics por area`);
   for (const t of topics) {

@@ -2,6 +2,10 @@
   "vaultPath": "C:/Obsidian/Programacion/Programación",
   "outDir": "site",
   "ignoreDirs": [".obsidian", ".git", ".gitkeep", "node_modules"],
+  "excludePaths": [
+    "WebDev/10_Proyectos/VendGuard",
+    "WebDev/40_Recursos/IA/Flujo trabajo Obsidian.md"
+  ],
   "includeExtensions": [".md"],
   "assetExtensions": [".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp"],
   "assetsRoot": "WebDev/99_Adjuntos",
