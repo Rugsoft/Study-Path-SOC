@@ -1,0 +1,17 @@
+{
+  "name": "studypath",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Web de estudio sobre el vault de Obsidian, con el design system de Steam.",
+  "scripts": {
+    "build": "node build.mjs",
+    "dev": "node build.mjs && node server.mjs",
+    "serve": "node server.mjs",
+    "watch": "node build.mjs --watch"
+  },
+  "dependencies": {
+    "highlight.js": "^11.11.1",
+    "marked": "^15.0.7"
+  }
+}
