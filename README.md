@@ -48,6 +48,7 @@ Consideraciones:
 | `site/data/search.json` | Índice invertido del buscador; se descarga en el primer uso, no al arrancar |
 | `site/data/notes/*.json` → `backlinks` | Notas que enlazan a cada una, calculado invirtiendo el grafo |
 | `site/assets/img/` | Imágenes copiadas del origen |
+| `site/assets/pdf/` | Guías y roadmaps enlazados desde las notas de recursos |
 
 `index.json` **no publica la ruta local del origen**: se descarga en cada
 visita y la ruta del disco no es información de la web.
@@ -147,6 +148,21 @@ El build las descarta **antes** de registrar la nota, así que no aparecen ni en
 el índice ni en el buscador. Editar esa lista es la única forma de cambiar qué
 se comparte.
 
+## Los PDF adjuntos
+
+El build copia **solo los PDF que las notas enlazan**, y solo desde
+`pdfSourceDirs` (`WebDev/40_Recursos` por defecto). Ahora mismo son 4 ficheros,
+unos 7 MB: las guías de MoureDev y los roadmaps de roadmap.sh, ambos públicos.
+
+No se copia nada más. De los 126 PDF que hay en `99_Adjuntos/PDFs`, 122 son
+material del curso (manuales de PHP del profesor, Gestor de Incidencias,
+Ruta360, apuntes de clase) y no se publican: sus referencias quedan como texto
+plano en la nota, sin enlace, en vez de como un 404.
+
+La lista de origen es explícita, así que ampliar qué se publica es una línea en
+`vault.config.json`. Los nombres de los ficheros no se tocan, para que los
+enlaces de las notas sigan funcionando.
+
 ## Traducción de la sintaxis del origen
 
 El formato de origen usa frontmatter YAML, líneas `Etiquetas:`, callouts
@@ -159,11 +175,12 @@ El formato de origen usa frontmatter YAML, líneas `Etiquetas:`, callouts
 | `[[Nota]]` / `[x](nota.md)` | Enlace interno a `nota.html?id=` |
 | `![[imagen.png]]` | `<img>` con el asset copiado a `site/assets/img/` |
 | ` ```mermaid ` | Bloque de código rotulado, sin renderizar |
+| `[[guia.pdf]]` | Enlace al PDF si está copiado; texto plano si no |
 | Frontmatter | Metadatos de la nota (fecha, módulo, manual) |
 
 ## Fuera de alcance
 
 - Los diagramas Mermaid se muestran como código, sin renderizar.
-- Los PDF del origen no se parsean.
+- Los PDF no se parsean: se enlazan, no se leen.
 - El progreso de estudio vive en `localStorage`: no hay backend ni cuentas.
 - El sistema es claro por diseño, así que no hay modo oscuro.

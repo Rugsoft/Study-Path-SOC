@@ -9,5 +9,9 @@
   "includeExtensions": [".md"],
   "assetExtensions": [".png", ".jpg", ".jpeg", ".svg", ".gif", ".webp"],
   "assetsRoot": "WebDev/99_Adjuntos",
+  "assetOutDir": "assets/img",
+  "pdfExtensions": [".pdf"],
+  "pdfOutDir": "assets/pdf",
+  "pdfSourceDirs": ["WebDev/40_Recursos"],
   "contentColumnPx": 940
 }

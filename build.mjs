@@ -165,7 +165,63 @@ function build() {
   };
   const resolveAsset = (target) => assetMap.get(norm(path.basename(String(target)))) ?? null;
 
-  // --- Pasada 2: render ---------------------------------------------
+  /** Un PDF copiado resuelve a su ruta en el sitio; si no, null. */
+  const resolvePdf = (target) => {
+    const dir = config.pdfOutDir ?? 'assets/pdf';
+    return pdfUsed.has(norm(path.basename(String(target))))
+      ? `${dir}/${encodeURIComponent(pdfMap.get(norm(path.basename(String(target)))))}`
+      : null;
+  };
+
+  // --- Pasada 2: PDF referenciados ---------------------------------
+  // Solo se copian los PDF que las notas enlazan de verdad, no los 126 que hay
+  // en 99_Adjuntos/PDFs: la mayoria son material del curso que no se publica.
+  // Se recorren las notas en crudo, se extraen sus referencias y se copia lo
+  // que exista. Si manana se enlaza una guia nueva, se publica sola.
+  const pdfFiles = walk(
+    path.join(VAULT, config.assetsRoot),
+    config.pdfExtensions ?? ['.pdf'],
+    config.ignoreDirs,
+  );
+  const pdfMap = new Map();
+  const pdfUsed = new Set();
+  let pdfBytes = 0;
+
+  for (const file of pdfFiles) {
+    const base = path.basename(file);
+    // El nombre lleva espacios y, a veces, un hash de sincronizacion delante.
+    pdfMap.set(norm(base), base);
+  }
+
+  const pdfOut = path.join(OUT, config.pdfOutDir ?? 'assets/pdf');
+  fs.mkdirSync(pdfOut, { recursive: true });
+
+  for (const note of notes) {
+    // Solo se miran las notas de recursos: las de sesion enlazan a los
+    // manuales del curso, que no se publican.
+    if (!config.pdfSourceDirs.some((dir) => note.rel.replace(/\\/g, '/').startsWith(dir))) {
+      continue;
+    }
+
+    let raw;
+    try {
+      raw = fs.readFileSync(note.file, 'utf8');
+    } catch {
+      continue;
+    }
+
+    for (const m of raw.matchAll(/!?\[\[([^\]|#]+\.pdf)\]\]/gi)) {
+      const base = path.basename(m[1].trim());
+      if (pdfMap.has(norm(base)) && !pdfUsed.has(norm(base))) {
+        pdfUsed.add(norm(base));
+        const name = path.basename(pdfMap.get(norm(base)));
+        fs.copyFileSync(path.join(VAULT, config.assetsRoot, 'PDFs', name), path.join(pdfOut, name));
+        pdfBytes += fs.statSync(path.join(pdfOut, name)).size;
+      }
+    }
+  }
+
+  // --- Pasada 3: render ---------------------------------------------
   const rendered = [];
 
   for (const note of notes) {
@@ -179,7 +235,7 @@ function build() {
 
     let result;
     try {
-      result = renderNote(raw, note.title, { resolveNote, resolveAsset });
+      result = renderNote(raw, note.title, { resolveNote, resolveAsset, resolvePdf });
     } catch (err) {
       warnings.push(`Error parseando ${note.rel}: ${err.message}`);
       continue;
@@ -361,6 +417,7 @@ function build() {
   console.log(`  data/notes/*.json ${kb(notesBytes)} en ${rendered.length} ficheros`);
   console.log(`  data/search.json  ${kb(searchBytes)}  (${searchStats.tokens} tokens, media ${searchStats.avgPostings} docs/token)`);
   console.log(`  assets/img        ${assetFiles.length} ficheros, ${kb(assetBytes)}`);
+  console.log(`  assets/pdf        ${pdfUsed.size} ficheros, ${kb(pdfBytes)} (referenciados por las notas)`);
   console.log(`  estaticos         ${staticFiles} ficheros`);
   console.log(`  tiempo            ${ms} ms`);
 

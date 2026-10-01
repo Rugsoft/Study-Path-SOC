@@ -757,6 +757,19 @@ select.dropdown {
 
 .wikilink-missing { color: var(--body-grey); border-bottom: 1px dotted var(--body-faint); text-decoration: none; }
 
+/* Enlace a un PDF adjunto. Mantiene el azul del navegador (convencion de
+   navegacion, no marca) y solo anade la caja para que se vea que es un
+   documento aparte y no otra nota. */
+.pdflink {
+  display: inline-block;
+  padding: 0 var(--sp-sm);
+  border: 1px solid var(--hairline);
+  border-radius: var(--r-sm);
+  background: var(--surface-cool);
+  line-height: 1.7;
+}
+.pdflink:hover { background: var(--surface-sage); border-color: var(--ink); }
+
 /* Tablas */
 .tablewrap { overflow-x: auto; margin-bottom: var(--sp-base); }
 .note__table {

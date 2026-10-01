@@ -7,6 +7,7 @@
  */
 
 import { marked } from 'marked';
+import path from 'node:path';
 import hljs from 'highlight.js/lib/common';
 import powershell from 'highlight.js/lib/languages/powershell';
 import dos from 'highlight.js/lib/languages/dos';
@@ -163,8 +164,17 @@ const CALLOUT_LABELS = {
 const calloutLabel = (type) => CALLOUT_LABELS[type.toLowerCase()] ?? capitalise(type);
 
 /** `[[Objetivo]]`, `[[Objetivo|alias]]` y `![[imagen.png]]`. */
-function transformObsidianLinks(md, { resolveNote, resolveAsset }) {
+function transformObsidianLinks(md, { resolveNote, resolveAsset, resolvePdf }) {
   return md
+    .replace(/\[\[([^\]|#]+\.pdf)(?:\|([^\]]+))?\]\]/gi, (whole, target, alias) => {
+      // Un PDF solo enlaza si el build lo copio: los demas son material del
+      // curso que no se publica, y un 404 seria peor que texto plano.
+      const href = resolvePdf?.(target.trim());
+      const label = (alias ?? path.basename(target.trim())).trim();
+      return href
+        ? `<a class="pdflink" href="${href}" target="_blank" rel="noopener">${escapeHtml(label)}</a>`
+        : escapeHtml(label);
+    })
     .replace(/!\[\[([^\]|]+)(?:\|([^\]]+))?\]\]/g, (whole, target) => {
       const asset = resolveAsset(target.trim());
       return asset ? `<img src="${asset}" alt="${escapeHtml(target.trim())}" loading="lazy">` : whole;
@@ -311,7 +321,7 @@ function ensureRenderer() {
  *
  * @param {string} raw contenido del .md
  * @param {object} title titulo (nombre del fichero sin extension)
- * @param {object} ctx { resolveNote, resolveAsset }
+ * @param {object} ctx { resolveNote, resolveAsset, resolvePdf }
  */
 export function renderNote(raw, title, ctx) {
   ensureRenderer();

@@ -29,6 +29,7 @@ const MIME = {
   '.webp': 'image/webp',
   '.woff2': 'font/woff2',
   '.ico': 'image/x-icon',
+  '.pdf': 'application/pdf',
 };
 
 if (!fs.existsSync(OUT)) {
