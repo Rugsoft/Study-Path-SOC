@@ -26,10 +26,18 @@ cd "$ROOT"
 echo "==> Construyendo el sitio"
 npm run build
 
+# gh-pages no puede estar checkoutada en dos sitios a la vez: si una
+# ejecucion anterior dejo un worktree colgado, se libera antes de crear otro.
+STALE="$(git worktree list --porcelain | awk '/^worktree /{wt=$2} /^branch .*gh-pages$/{print wt}')"
+if [ -n "${STALE:-}" ]; then
+  echo "==> Liberando worktree previo de gh-pages"
+  git worktree remove --force "$STALE" 2>/dev/null || true
+  rm -rf "$STALE"
+fi
+git worktree prune
+
 if git show-ref --verify --quiet refs/heads/gh-pages; then
   echo "==> Actualizando gh-pages"
-  git worktree remove --force "$WT" 2>/dev/null || true
-  rm -rf "$WT"
   git worktree add "$WT" gh-pages
 else
   echo "==> Creando gh-pages"
