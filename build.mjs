@@ -220,6 +220,39 @@ function build() {
   const courses = buildCourseIndex(rendered);
   const tags = [...new Set(rendered.flatMap((n) => n.tags))].sort((a, b) => a.localeCompare(b, 'es'));
 
+  // --- Backlinks ------------------------------------------------------
+  // Los enlaces ya estan renderizados como nota.html?id=, asi que invertir el
+  // grafo es recorrerlos una vez y agruparlos por destino. No cuesta nada:
+  // el dato ya existia.
+  const byId = new Map(rendered.map((n) => [n.id, n]));
+  const inbound = new Map(rendered.map((n) => [n.id, []]));
+
+  for (const note of rendered) {
+    const seen = new Set();
+    for (const match of note.html.matchAll(/nota\.html\?id=([^"'&]+)/g)) {
+      const targetId = decodeURIComponent(match[1]);
+      if (targetId === note.id || !byId.has(targetId)) continue;
+      // Una nota que enlaza dos veces a la misma cuenta una sola vez.
+      if (seen.has(targetId)) continue;
+      seen.add(targetId);
+      inbound.get(targetId).push(note);
+    }
+  }
+
+  for (const note of rendered) {
+    note.backlinks = inbound
+      .get(note.id)
+      .map((src) => ({
+        id: src.id,
+        title: src.title,
+        topicLabel: src.topicLabel,
+        session: src.course?.session ?? null,
+      }))
+      .sort((a, b) => a.title.localeCompare(b.title, 'es'));
+  }
+
+  const orphans = rendered.filter((n) => n.backlinks.length === 0);
+
   const totalWords = rendered.reduce((a, n) => a + n.words, 0);
   const totalCode = rendered.reduce((a, n) => a + n.codeBlocks, 0);
 
@@ -240,6 +273,7 @@ function build() {
       readingMins: note.readingMins,
       codeBlocks: note.codeBlocks,
       words: note.words,
+      backlinks: note.backlinks,
       html: note.html,
     });
   }
@@ -310,6 +344,8 @@ function build() {
   console.log(`  Tags              ${tags.length}`);
   console.log(`  Palabras          ${totalWords.toLocaleString('es-ES')}`);
   console.log(`  Bloques de codigo ${Math.round(totalCode)}`);
+  console.log(`  Backlinks         ${rendered.reduce((a, n) => a + n.backlinks.length, 0)} en ${rendered.length - orphans.length} notas`);
+  console.log(`  Sin backlinks     ${orphans.length}`);
   if (skipped.length) {
     console.log(`  Excluidas         ${skipped.length}`);
     for (const s of skipped) console.log(`    - ${s}`);

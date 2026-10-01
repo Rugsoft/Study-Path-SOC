@@ -5,7 +5,7 @@ opencode.jsonc
 # Dependencias de build
 node_modules/
 
-# Salida generada por build.mjs (390 notas + assets, ~6 MB)
+# Salida generada por build.mjs (388 notas + assets, ~4 MB)
 site/
 
 # Estado interno de la app de escritorio (project-id por maquina)
@@ -14,3 +14,6 @@ site/
 # Servidor local
 server.log
 .serverpid
+
+# Copias temporales para probar el sitio bajo un subpath
+.tmp-sub/

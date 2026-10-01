@@ -34,7 +34,8 @@ Consideraciones:
 
 - La rama `gh-pages` contiene el sitio ya generado (~400 ficheros).
 - `site/.nojekyll` evita que Jekyll reescriba el CSS y el JS.
-- `data/search.json` pesa 1,8 MB y cada visitante lo descarga al primer uso.
+- `data/search.json` pesa 205 KB comprimidos y cada visitante lo descarga al
+  primer uso, no al arrancar.
 - El progreso de estudio vive en `localStorage`, así que **cada dispositivo y
   cada navegador lleva el suyo**: no se sincroniza entre dispositivos.
 
@@ -45,6 +46,7 @@ Consideraciones:
 | `site/data/index.json` | Metadatos de las notas: título, tema, tags, curso, tiempo de lectura |
 | `site/data/notes/*.json` | HTML ya renderizado por nota, con resaltado de sintaxis |
 | `site/data/search.json` | Índice invertido del buscador; se descarga en el primer uso, no al arrancar |
+| `site/data/notes/*.json` → `backlinks` | Notas que enlazan a cada una, calculado invirtiendo el grafo |
 | `site/assets/img/` | Imágenes copiadas del origen |
 
 `index.json` **no publica la ruta local del origen**: se descarga en cada
@@ -62,6 +64,7 @@ tools/
   parse.mjs           markdown + sintaxis extendida -> HTML con resaltado
   search-index.mjs    índice invertido con claves ordenadas para prefijos
 src/                  fuentes estáticas que el build copia a site/
+check.mjs             verificación de enlaces y backlinks del sitio generado
 ```
 
 ## Decisiones del design system
@@ -113,6 +116,29 @@ marca con su número de sesión.
 
 La navegación al final de la nota (anterior/siguiente) también respeta el eje:
 una ficha nunca salta a una bitácora, ni al revés.
+
+## Enlaces entrantes
+
+Cada nota muestra, al final, qué otras notas la enlazan. El build ya renderiza
+los enlaces internos como `nota.html?id=`, así que invertirlos es recorrerlos
+una vez y agruparlos por destino: no cuesta nada porque el dato ya existía.
+
+758 enlaces entrantes repartidos en 296 notas. Las 92 que quedan sin ninguno se
+pintan igual, con un texto de vacío, para que se vea que el apartado existe.
+
+La relación es unidireccional: si A enlaza a B, el bloque de B lista a A.
+
+## El peso del buscador
+
+El índice invertido no guarda el texto de las notas: representaba el 56% de un
+fichero que, ya comprimido, bajaba de 533 KB a **205 KB**. El texto se sigue
+usando para indexar, pero el fragmento de cada resultado se recorta en el
+cliente del HTML de la nota, que se carga aparte.
+
+La contrapartida: cada resultado que se pinta descarga su nota (~11 KB de
+media). El desplegable de la cabecera pide 8 notas (87 KB) y la página de
+resultados está acotada a 20 (218 KB); cuando hay más coincidencias, se avisa en
+vez de cortarlas en silencio. El límite existe por peso, no por calidad.
 
 ## Qué queda fuera del sitio
 

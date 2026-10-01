@@ -28,6 +28,11 @@ export function tokenize(text) {
 /**
  * Construye el indice a partir de las notas ya renderizadas.
  *
+ * El texto de cada nota se usa para indexar pero NO se guarda en el indice:
+ * representaba el 56% de los 1,8 MB del fichero y lo que de verdad viaja por
+ * la red son los 205 KB sin el. El fragmento de cada resultado se recorta en el
+ * cliente del html de la nota, que se carga aparte al pinchar.
+ *
  * @param {Array<{id:string,title:string,text:string,tags:string[],topicId:string,topicLabel:string}>} docs
  */
 export function buildSearchIndex(docs) {
@@ -63,7 +68,6 @@ export function buildSearchIndex(docs) {
       topicLabel: d.topicLabel,
       tags: d.tags ?? [],
       course: d.course ?? null,
-      text: d.text ?? '',
     })),
   };
 }

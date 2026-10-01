@@ -260,6 +260,11 @@ function prefixRange(tokens, prefix) {
 
 /**
  * Consulta el indice y devuelve resultados ordenados por relevancia.
+ *
+ * El indice ya no guarda el texto de cada nota (era el 56% del fichero), asi
+ * que el fragmento se recorta del html de la nota, que se carga aparte. Solo
+ * se piden las notas que van a pintarse.
+ *
  * @returns {Promise<Array<{doc:object, score:number, snippet:string}>>}
  */
 export async function search(text, limit = 40) {
@@ -310,10 +315,70 @@ export async function search(text, limit = 40) {
     .sort((a, b) => b.score - a.score)
     .slice(0, limit);
 
-  return ranked.map((item) => ({
+  // El html de cada nota lleva el texto; de ahi sale el fragmento.
+  const texts = await Promise.all(
+    ranked.map((item) => noteText(item.doc.id)),
+  );
+
+  return ranked.map((item, i) => ({
     ...item,
-    snippet: buildSnippet(item.doc.text, terms),
+    snippet: buildSnippet(texts[i], terms),
   }));
+}
+
+/**
+ * Cuenta cuantos documentos casan con una consulta, sin cargar sus notas.
+ *
+ * Sirve para avisar de que hay mas resultados de los que se pintan: el limite
+ * de la lista existe por peso (cada nota son ~11 KB), no por calidad.
+ *
+ * @returns {Promise<number>}
+ */
+export async function countMatches(text) {
+  const query = String(text ?? '').trim();
+  if (query.length < 2) return 0;
+
+  const index = await ensureSearchIndex();
+  const terms = tokenizeQuery(query);
+  if (!terms.length) return 0;
+
+  const { tokens, postings } = index;
+  const matched = new Set();
+  for (const term of terms) {
+    for (const token of prefixRange(tokens, term)) {
+      for (const docIndex of postings[token] ?? []) matched.add(docIndex);
+    }
+  }
+  return matched.size;
+}
+
+/**
+ * Texto plano de una nota a partir de su html renderizado.
+ *
+ * El navegador concatena los bloques sin separarlos ("¿Qué es?Las
+ * propiedades..."), asi que se convierten a espacios los saltos de bloque.
+ * Devuelve cadena vacia si la nota no se puede cargar: es mejor un resultado
+ * sin fragmento que un resultado que no aparece.
+ */
+async function noteText(id) {
+  try {
+    const res = await fetch(`${DATA}notes/${encodeURIComponent(id)}.json`);
+    if (!res.ok) return '';
+    const note = await res.json();
+
+    const holder = document.createElement('div');
+    holder.innerHTML = note.html ?? '';
+    holder.querySelectorAll('script, style').forEach((el) => el.remove());
+    // Separadores de bloque: los nodos que terminan o empiezan un bloque.
+    holder.querySelectorAll(
+      'p, div, li, h1, h2, h3, h4, h5, h6, tr, br, pre, blockquote, hr, table',
+    ).forEach((el) => {
+      el.append(' ');
+    });
+    return (holder.textContent ?? '').replace(/\s+/g, ' ').trim();
+  } catch {
+    return '';
+  }
 }
 
 /** Trocea el texto alrededor de la primera coincidencia. */
@@ -390,7 +455,7 @@ function initSearch(index) {
             <span class="searchresult__crumb">${escapeHtml(r.doc.topicLabel)}${
               r.doc.course?.session ? ` · sesión ${r.doc.course.session}` : ''
             }</span>
-            <span class="searchresult__snippet">${r.snippet}</span>
+            ${r.snippet ? `<span class="searchresult__snippet">${r.snippet}</span>` : ''}
           </a>`,
             )
             .join('')
